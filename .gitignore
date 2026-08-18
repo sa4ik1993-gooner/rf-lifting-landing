@@ -1,0 +1,9 @@
+.vercel
+.claude
+
+# Вихідні фото та скріншоти, які сайт не використовує
+IMG_*.PNG
+IMG_*.JPG
+2026-*.jpg
+ba-before-backup.jpg
+compare-card.png

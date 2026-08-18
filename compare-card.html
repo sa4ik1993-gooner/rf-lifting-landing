@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Bionix Quantum vs Morpheus 8</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+        --gold: #A67C52;
+        --gold-light: #C49A6C;
+        --brown-dark: #3D2B1F;
+        --brown: #5C4033;
+        --beige: #FBF5EF;
+        --beige-warm: #F7EDE2;
+        --orange: #F7941D;
+        --white: #FFFFFF;
+        --success: #4CAF50;
+        --danger: #E74C3C;
+        --text-light: #6B6B6B;
+        --text-muted: #999;
+    }
+    body {
+        font-family: 'Nunito', sans-serif;
+        width: 1080px;
+        height: 1200px;
+        background: linear-gradient(135deg, var(--beige) 0%, #FFF8F0 50%, #FCEFD9 100%);
+        position: relative;
+        overflow: hidden;
+        color: var(--brown-dark);
+    }
+    body::before {
+        content: '';
+        position: absolute;
+        top: -200px;
+        right: -200px;
+        width: 700px;
+        height: 700px;
+        background: radial-gradient(circle, rgba(166, 124, 82, 0.12) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    body::after {
+        content: '';
+        position: absolute;
+        bottom: -300px;
+        left: -200px;
+        width: 700px;
+        height: 700px;
+        background: radial-gradient(circle, rgba(247, 148, 29, 0.08) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .wrap {
+        position: relative;
+        z-index: 2;
+        padding: 60px 60px 50px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .badge-top {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(166, 124, 82, 0.15);
+        color: var(--brown-dark);
+        padding: 10px 22px;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 22px;
+        align-self: flex-start;
+        letter-spacing: 0.5px;
+    }
+    h1 {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 54px;
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 14px;
+        color: var(--brown-dark);
+    }
+    h1 .accent { color: var(--gold); }
+    .sub {
+        font-size: 22px;
+        color: var(--brown);
+        line-height: 1.45;
+        margin-bottom: 36px;
+        font-weight: 500;
+        max-width: 880px;
+    }
+    .table {
+        background: var(--white);
+        border-radius: 24px;
+        box-shadow: 0 12px 40px rgba(61, 43, 31, 0.12);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1.1fr 1fr 1fr;
+        font-size: 19px;
+    }
+    .table > div {
+        padding: 18px 18px;
+        border-bottom: 1px solid var(--beige);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        line-height: 1.3;
+    }
+    .table > div:nth-last-child(-n+3) { border-bottom: none; }
+    .head {
+        background: var(--brown-dark);
+        color: var(--white);
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+        font-size: 22px;
+        flex-direction: column;
+        gap: 8px;
+        padding: 22px 14px;
+        min-height: 100px;
+    }
+    .head-bionix {
+        background: linear-gradient(135deg, var(--gold), var(--brown-dark));
+    }
+    .head-badge {
+        background: var(--orange);
+        color: var(--white);
+        padding: 4px 14px;
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        box-shadow: 0 2px 8px rgba(247,148,29,0.4);
+    }
+    .param {
+        background: var(--beige);
+        font-weight: 700;
+        font-size: 17px;
+        color: var(--brown-dark);
+        justify-content: flex-start !important;
+        text-align: left !important;
+        padding-left: 22px !important;
+    }
+    .bionix {
+        background: rgba(166, 124, 82, 0.07);
+        color: var(--brown-dark);
+        font-weight: 600;
+    }
+    .morph {
+        color: var(--text-light);
+    }
+    .bionix .check::before {
+        content: '✓ ';
+        color: var(--success);
+        font-weight: 800;
+    }
+    .price-big {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--orange);
+        display: block;
+    }
+    .price-old {
+        font-size: 19px;
+        color: var(--text-muted);
+    }
+    small {
+        display: block;
+        font-size: 14px;
+        color: var(--text-light);
+        font-weight: 500;
+        margin-top: 3px;
+    }
+    .footer {
+        margin-top: 36px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .takeaway {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--brown-dark);
+        max-width: 700px;
+        line-height: 1.35;
+    }
+    .takeaway .hl {
+        color: var(--orange);
+    }
+    .handle {
+        text-align: right;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 700;
+    }
+    .handle .at {
+        font-size: 24px;
+        color: var(--brown-dark);
+    }
+    .handle .desc {
+        font-size: 14px;
+        color: var(--text-light);
+        margin-top: 4px;
+        font-family: 'Nunito', sans-serif;
+        font-weight: 500;
+    }
+</style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="badge-top">⚖️ ЧЕСНЕ ПОРІВНЯННЯ</div>
+        <h1>Bionix Quantum vs Morpheus 8 — <span class="accent">що краще для обличчя?</span></h1>
+        <p class="sub">Morpheus 8 — преміум-апарат для контурування тіла. Для обличчя — надлишковий та дорогий. Bionix Quantum створений саме під обличчя — м'якше, безпечніше, у 3 рази доступніше.</p>
+
+        <div class="table">
+            <div class="head">Параметр</div>
+            <div class="head head-bionix"><span class="head-badge">НАШ АПАРАТ</span><span>Bionix Quantum</span></div>
+            <div class="head">Morpheus 8</div>
+
+            <div class="param">🎯 Створений для</div>
+            <div class="bionix"><span class="check">Обличчя, шия</span></div>
+            <div class="morph">Тіло</div>
+
+            <div class="param">📏 Глибина голок</div>
+            <div class="bionix"><span class="check">0.2–3.5 мм<small>оптимально</small></span></div>
+            <div class="morph">0.5–8 мм<small>надлишково</small></div>
+
+            <div class="param">💎 Голки</div>
+            <div class="bionix"><span class="check">Позолочені<small>+ силікон</small></span></div>
+            <div class="morph">Стандартні</div>
+
+            <div class="param">⏱️ Реабілітація</div>
+            <div class="bionix"><span class="check">1–2 дні</span></div>
+            <div class="morph">2–5 днів</div>
+
+            <div class="param">😣 Дискомфорт</div>
+            <div class="bionix"><span class="check">Низький</span></div>
+            <div class="morph">Середній–високий</div>
+
+            <div class="param">💰 Лице + шия</div>
+            <div class="bionix"><span class="price-big">4 200 ₴</span></div>
+            <div class="morph"><span class="price-old">12 500 – 18 000 ₴</span></div>
+        </div>
+
+        <div class="footer">
+            <div class="takeaway">💡 Той самий ефект — <span class="hl">у 3 рази дешевше</span> і без зайвого болю</div>
+            <div class="handle">
+                <div class="at">@k.beauty.cosm</div>
+                <div class="desc">Дірект → «Акція»</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
