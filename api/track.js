@@ -63,6 +63,13 @@ async function appendRows(rows) {
 
 const clean = (v, n = 120) => String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').slice(0, n);
 
+// Vercel віддає місто percent-кодуванням: «Sofiivska%20Borschahivka».
+// У таблиці це читати неможливо, тож розкодовуємо.
+const cleanCity = (v, n = 40) => {
+  const raw = clean(v, 120);
+  try { return decodeURIComponent(raw).slice(0, n); } catch (e) { return raw.slice(0, n); }
+};
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
@@ -95,7 +102,7 @@ module.exports = async function handler(req, res) {
     const date = `${kyiv.year}-${kyiv.month}-${kyiv.day}`;
     const time = `${kyiv.hour}:${kyiv.minute}:${kyiv.second}`;
 
-    const city = clean(req.headers['x-vercel-ip-city'], 40);
+    const city = cleanCity(req.headers['x-vercel-ip-city']);
     const ua = clean(req.headers['user-agent'], 180);
 
     const sid = clean(body.sid, 40);
