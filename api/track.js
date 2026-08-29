@@ -47,7 +47,7 @@ async function accessToken() {
 async function appendRows(rows) {
   const id = process.env.ANALYTICS_SHEET_ID;
   const token = await accessToken();
-  const range = encodeURIComponent(`${SHEET_TAB}!A:S`);
+  const range = encodeURIComponent(`${SHEET_TAB}!A:T`);
   // OVERWRITE, не INSERT_ROWS: вставка рядків зсуває діапазони у формулах
   // на листах «Сеансы» і «Сводка», і зведення перестає бачити свіжі події.
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${range}` +
@@ -62,6 +62,21 @@ async function appendRows(rows) {
 }
 
 const clean = (v, n = 120) => String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').slice(0, n);
+
+// Вбудований браузер Instagram/Facebook — окремою колонкою: у ньому конверсія
+// зазвичай нижча, і без цього розрізу цього не видно. Порядок перевірок
+// важливий: рядок вбудованого браузера теж містить Safari та Chrome.
+function browserOf(ua) {
+  if (/Instagram/i.test(ua)) return 'Instagram (вбудований)';
+  if (/Threads/i.test(ua)) return 'Threads (вбудований)';
+  if (/FBAN|FBAV|FB_IAB/i.test(ua)) return 'Facebook (вбудований)';
+  if (/CriOS/i.test(ua)) return 'Chrome (iOS)';
+  if (/EdgA?\//i.test(ua)) return 'Edge';
+  if (/Firefox|FxiOS/i.test(ua)) return 'Firefox';
+  if (/Chrome/i.test(ua)) return 'Chrome';
+  if (/Safari/i.test(ua)) return 'Safari';
+  return '?';
+}
 
 // Vercel віддає місто percent-кодуванням: «Sofiivska%20Borschahivka».
 // У таблиці це читати неможливо, тож розкодовуємо.
@@ -116,7 +131,7 @@ module.exports = async function handler(req, res) {
       Number(e.t) || 0, Number(e.ta) || 0,
       clean(u.source, 60), clean(u.medium, 60), clean(u.campaign, 80),
       clean(u.content, 80), clean(u.term, 60),
-      dev, os, country, city, ref, clean(url, 300), ua,
+      dev, os, country, city, ref, clean(url, 300), ua, browserOf(ua),
     ]));
 
     await appendRows(rows);
