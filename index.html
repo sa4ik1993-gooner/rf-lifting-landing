@@ -3049,42 +3049,17 @@
         // ВЕБ-версію instagram.com, де більшість людей не залогінена — і лід
         // губиться на екрані логіну. У тій самій вкладці вебв'ю перехоплює
         // ig.me і розгортає діалог у самому застосунку.
+        // Вбудований браузер Instagram свідомо не випускає трафік у застосунок:
+        // ig.me він вантажить сам (веб-версію instagram.com, АВТО-залогінену —
+        // застосунок передає сесію своєму вебв'ю), а схему instagram:// мовчки
+        // блокує (перевірено діагностикою deeplink_try/fallback 29.08.2026).
+        // Тож у вебв'ю лишається одне: прибрати target="_blank" — нову вкладку
+        // він відкрити не вміє, з першого тапу виходив порожній екран.
         var IN_APP = /Instagram|Threads|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent);
-        var IG_DEEPLINK = 'instagram://user?username=k.beauty.cosm';
         if (IN_APP) {
-            // Вебв'ю не віддає ig.me застосунку навіть у тій самій вкладці —
-            // вантажить веб-версію instagram.com (перевірено з телефона).
-            // Пробиває тільки схема instagram://, яку вебв'ю мусить передати
-            // застосунку. Офіційного диплінка «відкрити діалог» немає —
-            // відкриваємо профіль, там кнопка «Повідомлення». Навігація має йти
-            // з самого href за тапом: жестовому переходу вебв'ю довіряє більше,
-            // ніж location.href зі скрипта.
             document.querySelectorAll('a[href*="ig.me"], a[href*="instagram.com/k.beauty.cosm"]').forEach(function(btn) {
                 btn.removeAttribute('target');
-                btn.dataset.web = btn.href;
-                btn.addEventListener('click', function() {
-                    TRACK.push('deeplink_try', blockOf(btn));
-                    // якщо за 1.2с застосунок не забрав керування — веб-версія,
-                    // як раніше; таймер гасимо, щойно сторінка пішла у фон
-                    var fallback = setTimeout(function() {
-                        TRACK.push('deeplink_fallback', '');
-                        location.href = btn.dataset.web;
-                    }, 1200);
-                    document.addEventListener('visibilitychange', function onHide() {
-                        if (document.visibilityState === 'hidden') {
-                            clearTimeout(fallback);
-                            document.removeEventListener('visibilitychange', onHide);
-                        }
-                    });
-                });
             });
-            // href переписуємо ПІСЛЯ того, як скрипт нижче навісив трекінг:
-            // він шукає кнопки за href*="ig.me", синхронна заміна зламала б вибірку
-            setTimeout(function() {
-                document.querySelectorAll('a[data-web]').forEach(function(btn) {
-                    btn.setAttribute('href', IG_DEEPLINK);
-                });
-            }, 0);
         }
 
         document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {
