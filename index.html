@@ -3051,8 +3051,27 @@
         // ig.me і розгортає діалог у самому застосунку.
         var IN_APP = /Instagram|Threads|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent);
         if (IN_APP) {
+            // Вебв'ю не віддає ig.me застосунку навіть у тій самій вкладці —
+            // вантажить веб-версію instagram.com (перевірено з телефона).
+            // Пробиває тільки диплінк instagram://, який вебв'ю відкрити не може
+            // і мусить передати застосунку. Офіційного диплінка «відкрити діалог»
+            // в Instagram немає — відкриваємо профіль, там кнопка «Повідомлення».
+            // Якщо за секунду застосунок не забрав керування — йдемо на ig.me.
             document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {
                 btn.removeAttribute('target');
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var fallback = setTimeout(function() {
+                        location.href = btn.href;
+                    }, 1200);
+                    document.addEventListener('visibilitychange', function onHide() {
+                        if (document.visibilityState === 'hidden') {
+                            clearTimeout(fallback);
+                            document.removeEventListener('visibilitychange', onHide);
+                        }
+                    });
+                    location.href = 'instagram://user?username=k.beauty.cosm';
+                });
             });
         }
 
