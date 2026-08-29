@@ -2865,10 +2865,168 @@
             });
         });
 
+        // ============================================
+        // АНАЛІТИКА: збирає події сеансу і шле в /api/track → Google Таблиця
+        // ============================================
+        var TRACK = (function() {
+            // Сеанс живе, поки людина активна. 30 хвилин без подій = новий сеанс,
+            // інакше повернення через дві години злилося б в один рядок таблиці.
+            var IDLE_MS = 30 * 60 * 1000;
+            var ss = {
+                get: function(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+                set: function(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+            };
+            function newSid() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+            var prev = ss.get('kb_sid');
+            var seen = +(ss.get('kb_seen') || 0);
+            var sid = (prev && Date.now() - seen < IDLE_MS) ? prev : newSid();
+            ss.set('kb_sid', sid);
+            ss.set('kb_seen', String(Date.now()));
+
+            // UTM ловимо один раз і тримаємо в сеансі: людина може перезайти вже
+            // без міток, але це той самий візит з тієї самої реклами.
+            var utm = null;
+            try { utm = JSON.parse(ss.get('kb_utm') || 'null'); } catch (e) {}
+            var q = new URLSearchParams(location.search);
+            var fromUrl = {
+                source:   q.get('utm_source') || q.get('src') || '',
+                medium:   q.get('utm_medium') || '',
+                campaign: q.get('utm_campaign') || '',
+                content:  q.get('utm_content') || '',
+                term:     q.get('utm_term') || ''
+            };
+            if (fromUrl.source || fromUrl.campaign || fromUrl.content) {
+                utm = fromUrl;
+                ss.set('kb_utm', JSON.stringify(utm));
+            }
+            if (!utm) utm = fromUrl;
+
+            var ua = navigator.userAgent;
+            var dev = /iPad|Tablet/i.test(ua) ? 'tablet'
+                : /Mobi|Android|iPhone/i.test(ua) ? 'mobile' : 'desktop';
+            var os = /iPhone|iPad|iPod/i.test(ua) ? 'iOS'
+                : /Android/i.test(ua) ? 'Android'
+                : /Mac OS X/i.test(ua) ? 'macOS'
+                : /Windows/i.test(ua) ? 'Windows'
+                : /Linux/i.test(ua) ? 'Linux' : '?';
+
+            var t0 = Date.now();
+            // Активний час рахуємо окремо від загального: вкладка може годину
+            // висіти у фоні, і без цього «час на сайті» був би вигаданий.
+            var activeMs = 0;
+            var activeFrom = document.visibilityState === 'visible' ? Date.now() : 0;
+            function activeSec() {
+                return Math.round((activeMs + (activeFrom ? Date.now() - activeFrom : 0)) / 1000);
+            }
+
+            var queue = [], timer = null, dead = false, lastBlock = 'hero';
+
+            function flush(beacon) {
+                if (dead || !queue.length) return;
+                var payload = JSON.stringify({
+                    sid: sid, dev: dev, os: os, utm: utm,
+                    ref: (document.referrer || '').slice(0, 120),
+                    url: location.href.slice(0, 300),
+                    events: queue
+                });
+                queue = [];
+                try {
+                    if (beacon && navigator.sendBeacon) {
+                        navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
+                    } else {
+                        fetch('/api/track', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: payload, keepalive: true
+                        }).catch(function() {});
+                    }
+                } catch (e) {}
+            }
+
+            function push(ev, meta) {
+                if (dead) return;
+                ss.set('kb_seen', String(Date.now()));
+                queue.push({
+                    ev: ev,
+                    meta: meta == null ? '' : String(meta).slice(0, 120),
+                    t: Math.round((Date.now() - t0) / 1000),
+                    ta: activeSec()
+                });
+                clearTimeout(timer);
+                if (queue.length >= 8) flush(false);
+                else timer = setTimeout(function() { flush(false); }, 2000);
+            }
+
+            // Пульс: якщо людина просто читає і нічого не натискає, без цього
+            // в таблиці лишався б тільки «open», а тривалість виходила б нульова.
+            [15, 30, 60, 120, 180, 300].forEach(function(sec) {
+                setTimeout(function() {
+                    if (activeSec() >= sec - 3) push('heartbeat', sec + 's');
+                }, sec * 1000);
+            });
+
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    activeFrom = Date.now();
+                } else {
+                    if (activeFrom) { activeMs += Date.now() - activeFrom; activeFrom = 0; }
+                    flush(true);
+                }
+            });
+            addEventListener('pagehide', function() {
+                push('exit', lastBlock);
+                flush(true);
+                dead = true;
+            });
+
+            push('open', location.pathname);
+            return { push: push, setBlock: function(b) { if (b) lastBlock = b; } };
+        })();
+
+        // Блоки нумеруємо в порядку сторінки: у таблиці «08_pricing» більше за
+        // «03_how», тож звичайним МАКС видно, до якого місця людина дочитала.
+        var BLOCK_NO = (function() {
+            var map = {};
+            document.querySelectorAll('section[id]').forEach(function(el, i) {
+                map[el.id] = ('0' + (i + 1)).slice(-2) + '_' + el.id;
+            });
+            return map;
+        })();
+        function blockName(id) { return BLOCK_NO[id] || id || 'other'; }
+        function blockOf(el) {
+            var sec = el && el.closest ? el.closest('section[id]') : null;
+            if (sec) return blockName(sec.id);
+            var box = el && el.closest ? el.closest('div[id]') : null;
+            return box ? box.id : 'other';
+        }
+
         // Meta Pixel — Lead event on all Direct buttons
+        // На странице 11 CTA. Lead шлём один раз за сессию, иначе один человек,
+        // кликнувший несколько кнопок, засчитывался как несколько конверсий
+        // и завышал статистику. DirectClick шлём на каждый клик — для ретаргета
+        // и для сверки количества кликов с реальными диалогами в чат-боте.
+        var leadSentFallback = false;
+
+        function leadAlreadySent() {
+            try {
+                return sessionStorage.getItem('kb_lead_sent') === '1';
+            } catch (e) {
+                return leadSentFallback;
+            }
+        }
+
+        function markLeadSent() {
+            leadSentFallback = true;
+            try { sessionStorage.setItem('kb_lead_sent', '1'); } catch (e) {}
+        }
+
         document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                if (typeof fbq === 'function') {
+                TRACK.push('direct_click', blockOf(btn));
+                if (typeof fbq !== 'function') return;
+                fbq('trackCustom', 'DirectClick');
+                if (!leadAlreadySent()) {
+                    markLeadSent();
                     fbq('track', 'Lead');
                 }
             });
@@ -2877,6 +3035,7 @@
         // Instagram profile click (exit popup)
         document.querySelectorAll('a[href*="instagram.com/k.beauty.cosm"]').forEach(function(btn) {
             btn.addEventListener('click', function() {
+                TRACK.push('ig_profile', blockOf(btn));
                 if (typeof fbq === 'function') {
                     fbq('trackCustom', 'InstagramProfileClick');
                 }
@@ -2909,14 +3068,17 @@
             var scrolled = window.scrollY / docHeight;
             if (!scrollFired.s50 && scrolled >= 0.5) {
                 scrollFired.s50 = true;
+                TRACK.push('scroll', '50%');
                 safeFbq('Scroll50');
             }
             if (!scrollFired.s75 && scrolled >= 0.75) {
                 scrollFired.s75 = true;
+                TRACK.push('scroll', '75%');
                 safeFbq('ScrollDeep');
             }
             if (!scrollFired.s90 && scrolled >= 0.9) {
                 scrollFired.s90 = true;
+                TRACK.push('scroll', '90%');
                 safeFbq('ScrollToEnd');
             }
         }, { passive: true });
@@ -2926,6 +3088,7 @@
         function fireBA() {
             if (!baFired) {
                 baFired = true;
+                TRACK.push('before_after', blockName('beforeafter'));
                 safeFbq('BeforeAfterInteraction');
             }
         }
@@ -2938,6 +3101,7 @@
         var faqFired = false;
         document.querySelectorAll('.faq-question').forEach(function(btn) {
             btn.addEventListener('click', function() {
+                TRACK.push('faq_open', (btn.textContent || '').trim().slice(0, 60));
                 if (!faqFired) {
                     faqFired = true;
                     safeFbq('FAQOpen');
@@ -2948,22 +3112,23 @@
         // 6) PricingView — секция цен попала в зону видимости
         // 7) CompareView — блок сравнения с Morpheus попал в зону видимости
         // 8) ReviewsView — секция отзывов попала в зону видимости
-        var sectionFired = { pricing: false, compare: false, reviews: false };
+        // Піксель отримує три події, як і раніше. У таблицю пишемо перегляд
+        // КОЖНОЇ секції — інакше не видно, до якого блоку людина дочитала.
+        var sectionFired = {};
         var sectionMap = { pricing: 'PricingView', compare: 'CompareView', reviews: 'ReviewsView' };
         var sectionObserver = new IntersectionObserver(function(entries) {
             entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    var id = entry.target.id;
-                    if (sectionMap[id] && !sectionFired[id]) {
-                        sectionFired[id] = true;
-                        safeFbq(sectionMap[id]);
-                    }
-                }
+                if (!entry.isIntersecting) return;
+                var id = entry.target.id;
+                if (sectionFired[id]) return;
+                sectionFired[id] = true;
+                TRACK.setBlock(blockName(id));
+                TRACK.push('view', blockName(id));
+                if (sectionMap[id]) safeFbq(sectionMap[id]);
             });
         }, { threshold: 0.5 });
-        ['pricing', 'compare', 'reviews'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) sectionObserver.observe(el);
+        document.querySelectorAll('section[id]').forEach(function(el) {
+            sectionObserver.observe(el);
         });
 
         // 9) ExitPopupShown — показался exit-попап (видели, но могли не кликнуть)
@@ -2971,6 +3136,7 @@
         if (typeof showPopup === 'function') {
             window.showPopup = function() {
                 origShowPopup();
+                TRACK.push('exit_popup', 'shown');
                 safeFbq('ExitPopupShown');
             };
         }
