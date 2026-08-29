@@ -3044,6 +3044,18 @@
             try { sessionStorage.setItem('kb_lead_sent', TRACK.sid); } catch (e) {}
         }
 
+        // Вбудований браузер Instagram/Facebook не вміє відкривати нову вкладку:
+        // target="_blank" дає порожній екран з першого тапу, а потім вантажить
+        // ВЕБ-версію instagram.com, де більшість людей не залогінена — і лід
+        // губиться на екрані логіну. У тій самій вкладці вебв'ю перехоплює
+        // ig.me і розгортає діалог у самому застосунку.
+        var IN_APP = /Instagram|Threads|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent);
+        if (IN_APP) {
+            document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {
+                btn.removeAttribute('target');
+            });
+        }
+
         document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 TRACK.push('direct_click', blockOf(btn));
