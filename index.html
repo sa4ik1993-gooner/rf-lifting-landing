@@ -3050,19 +3050,25 @@
         // губиться на екрані логіну. У тій самій вкладці вебв'ю перехоплює
         // ig.me і розгортає діалог у самому застосунку.
         var IN_APP = /Instagram|Threads|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent);
+        var IG_DEEPLINK = 'instagram://user?username=k.beauty.cosm';
         if (IN_APP) {
             // Вебв'ю не віддає ig.me застосунку навіть у тій самій вкладці —
             // вантажить веб-версію instagram.com (перевірено з телефона).
-            // Пробиває тільки диплінк instagram://, який вебв'ю відкрити не може
-            // і мусить передати застосунку. Офіційного диплінка «відкрити діалог»
-            // в Instagram немає — відкриваємо профіль, там кнопка «Повідомлення».
-            // Якщо за секунду застосунок не забрав керування — йдемо на ig.me.
-            document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {
+            // Пробиває тільки схема instagram://, яку вебв'ю мусить передати
+            // застосунку. Офіційного диплінка «відкрити діалог» немає —
+            // відкриваємо профіль, там кнопка «Повідомлення». Навігація має йти
+            // з самого href за тапом: жестовому переходу вебв'ю довіряє більше,
+            // ніж location.href зі скрипта.
+            document.querySelectorAll('a[href*="ig.me"], a[href*="instagram.com/k.beauty.cosm"]').forEach(function(btn) {
                 btn.removeAttribute('target');
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
+                btn.dataset.web = btn.href;
+                btn.addEventListener('click', function() {
+                    TRACK.push('deeplink_try', blockOf(btn));
+                    // якщо за 1.2с застосунок не забрав керування — веб-версія,
+                    // як раніше; таймер гасимо, щойно сторінка пішла у фон
                     var fallback = setTimeout(function() {
-                        location.href = btn.href;
+                        TRACK.push('deeplink_fallback', '');
+                        location.href = btn.dataset.web;
                     }, 1200);
                     document.addEventListener('visibilitychange', function onHide() {
                         if (document.visibilityState === 'hidden') {
@@ -3070,9 +3076,15 @@
                             document.removeEventListener('visibilitychange', onHide);
                         }
                     });
-                    location.href = 'instagram://user?username=k.beauty.cosm';
                 });
             });
+            // href переписуємо ПІСЛЯ того, як скрипт нижче навісив трекінг:
+            // він шукає кнопки за href*="ig.me", синхронна заміна зламала б вибірку
+            setTimeout(function() {
+                document.querySelectorAll('a[data-web]').forEach(function(btn) {
+                    btn.setAttribute('href', IG_DEEPLINK);
+                });
+            }, 0);
         }
 
         document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {
