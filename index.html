@@ -2883,6 +2883,27 @@
             ss.set('kb_sid', sid);
             ss.set('kb_seen', String(Date.now()));
 
+            // Постійний id відвідувача. sessionStorage живе лише до закриття
+            // вкладки, тож без localStorage повторний захід виглядав би як
+            // нова людина — а з реклами люди заходять по два-три рази.
+            var ls = {
+                get: function(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+                set: function(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+            };
+            var vid = ls.get('kb_vid');
+            if (!vid) {
+                vid = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+                ls.set('kb_vid', vid);
+            }
+            // Рахуємо саме візити, а не завантаження сторінки: перезавантаження
+            // всередині сеансу лишає той самий sid і номер візиту не збільшує.
+            var vn = +(ls.get('kb_visits') || 0);
+            if (sid !== prev) {
+                vn += 1;
+                ls.set('kb_visits', String(vn));
+            }
+            if (!vn) vn = 1;
+
             // UTM ловимо один раз і тримаємо в сеансі: людина може перезайти вже
             // без міток, але це той самий візит з тієї самої реклами.
             var utm = null;
@@ -2924,7 +2945,7 @@
             function flush(beacon) {
                 if (dead || !queue.length) return;
                 var payload = JSON.stringify({
-                    sid: sid, dev: dev, os: os, utm: utm,
+                    sid: sid, vid: vid, vn: vn, dev: dev, os: os, utm: utm,
                     ref: (document.referrer || '').slice(0, 120),
                     url: location.href.slice(0, 300),
                     events: queue
@@ -2980,7 +3001,7 @@
             });
 
             push('open', location.pathname);
-            return { push: push, setBlock: function(b) { if (b) lastBlock = b; } };
+            return { push: push, sid: sid, setBlock: function(b) { if (b) lastBlock = b; } };
         })();
 
         // Блоки нумеруємо в порядку сторінки: у таблиці «08_pricing» більше за
@@ -3007,9 +3028,12 @@
         // и для сверки количества кликов с реальными диалогами в чат-боте.
         var leadSentFallback = false;
 
+        // Прапорець зберігаємо разом з id сеансу, а не просто '1': інакше людина,
+        // яка лишила вкладку відкритою і повернулась через три години, починає
+        // новий сеанс зі старим прапорцем — і її клік у піксель уже не йде.
         function leadAlreadySent() {
             try {
-                return sessionStorage.getItem('kb_lead_sent') === '1';
+                return sessionStorage.getItem('kb_lead_sent') === TRACK.sid;
             } catch (e) {
                 return leadSentFallback;
             }
@@ -3017,7 +3041,7 @@
 
         function markLeadSent() {
             leadSentFallback = true;
-            try { sessionStorage.setItem('kb_lead_sent', '1'); } catch (e) {}
+            try { sessionStorage.setItem('kb_lead_sent', TRACK.sid); } catch (e) {}
         }
 
         document.querySelectorAll('a[href*="ig.me"]').forEach(function(btn) {

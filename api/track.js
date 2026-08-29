@@ -47,7 +47,7 @@ async function accessToken() {
 async function appendRows(rows) {
   const id = process.env.ANALYTICS_SHEET_ID;
   const token = await accessToken();
-  const range = encodeURIComponent(`${SHEET_TAB}!A:T`);
+  const range = encodeURIComponent(`${SHEET_TAB}!A:V`);
   // OVERWRITE, не INSERT_ROWS: вставка рядків зсуває діапазони у формулах
   // на листах «Сеансы» і «Сводка», і зведення перестає бачити свіжі події.
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${range}` +
@@ -132,6 +132,7 @@ module.exports = async function handler(req, res) {
       clean(u.source, 60), clean(u.medium, 60), clean(u.campaign, 80),
       clean(u.content, 80), clean(u.term, 60),
       dev, os, country, city, ref, clean(url, 300), ua, browserOf(ua),
+      clean(body.vid, 40), Number(body.vn) || 1,
     ]));
 
     await appendRows(rows);
