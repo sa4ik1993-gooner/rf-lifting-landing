@@ -138,7 +138,7 @@ module.exports = async function handler(req, res) {
       clean(u.content, 80), clean(u.term, 60),
       dev, os, country, city, ref, clean(url, 300), ua, browserOf(ua),
       clean(body.vid, 40), Number(body.vn) || 1,
-      /zayavka/i.test(url) ? 'zayavka' : 'main',
+      /\/pay(?:$|[?#.\/])|zayavka/i.test(url) ? 'pay' : 'main',
     ]));
 
     await appendRows(rows);
