@@ -3096,9 +3096,12 @@
                 leadForm.style.display = 'none';
                 document.getElementById('leadOk').style.display = 'block';
                 TRACK.push('lead_submit', 'ok');
+                // Purchase, а не Lead: цей лендінг живе в кампанії з ціллю
+                // «Продажі» — алгоритм тягне пул покупців, а не заповнювачів
+                // форм. Сума = ціна акції, в кабінеті буде видно ROAS.
                 if (typeof fbq === 'function' && !leadAlreadySent()) {
                     markLeadSent();
-                    fbq('track', 'Lead');
+                    fbq('track', 'Purchase', { value: 4200, currency: 'UAH' });
                 }
             }).catch(function() {
                 btn.disabled = false;
