@@ -47,7 +47,7 @@ async function accessToken() {
 async function appendRows(rows) {
   const id = process.env.ANALYTICS_SHEET_ID;
   const token = await accessToken();
-  const range = encodeURIComponent(`${SHEET_TAB}!A:V`);
+  const range = encodeURIComponent(`${SHEET_TAB}!A:W`);
   // OVERWRITE, не INSERT_ROWS: вставка рядків зсуває діапазони у формулах
   // на листах «Сеансы» і «Сводка», і зведення перестає бачити свіжі події.
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${range}` +
@@ -108,6 +108,11 @@ module.exports = async function handler(req, res) {
     if (country && country !== 'UA' && adTraffic) {
       return res.status(200).json({ ok: true, stored: false, bot: true });
     }
+    // Краулери перевірки оголошень Meta ходять з нерозгорнутими макросами
+    // {{campaign.name}} у посиланні — живий трафік таких URL не має
+    if (/\{\{|%7B%7B/i.test(url)) {
+      return res.status(200).json({ ok: true, stored: false, bot: true });
+    }
 
     const now = new Date();
     const kyiv = new Intl.DateTimeFormat('uk-UA', {
@@ -133,6 +138,7 @@ module.exports = async function handler(req, res) {
       clean(u.content, 80), clean(u.term, 60),
       dev, os, country, city, ref, clean(url, 300), ua, browserOf(ua),
       clean(body.vid, 40), Number(body.vn) || 1,
+      /zayavka/i.test(url) ? 'zayavka' : 'main',
     ]));
 
     await appendRows(rows);
