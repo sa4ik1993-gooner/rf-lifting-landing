@@ -1853,7 +1853,9 @@
             }
 
             .hero-image {
-                order: -1;
+                /* На мобілі фото займало ВЕСЬ перший екран, а оффер був за
+                   згином — 72% відвалу на hero. Перший екран: УТП + ціна + CTA. */
+                display: none;
             }
 
             .hero-image-placeholder {
@@ -2038,6 +2040,30 @@
 
                 <div class="hero-image">
                     <img src="hero.jpg" alt="RF-ліфтинг — результат процедури" style="aspect-ratio: 3/4; object-fit: cover;">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section section-beige" id="beforeafter">
+        <div class="container">
+            <h2 class="text-center fade-in">Реальні результати</h2>
+            <p class="section-subtitle text-center fade-in">Перетягніть повзунок, щоб побачити різницю</p>
+
+            <div class="ba-container fade-in">
+                <div class="ba-slider" id="baSlider">
+                    <div class="ba-before"></div>
+                    <div class="ba-after" id="baAfter"></div>
+                    <div class="ba-handle" id="baHandle"></div>
+                </div>
+                <div class="ba-labels">
+                    <span>До процедури</span>
+                    <span>Після 2 сеансів</span>
+                </div>
+                <p class="ba-note">Почервоніння сходить на 1–2 день після процедури</p>
+
+                <div style="text-align:center; margin-top: 32px;">
+                    <a href="https://ig.me/m/k.beauty.cosm" target="_blank" class="btn btn-primary">📩 Хочу такий самий результат</a>
                 </div>
             </div>
         </div>
@@ -2277,30 +2303,7 @@
     <!-- ============================================
          BEFORE / AFTER
          ============================================ -->
-    <section class="section section-beige" id="beforeafter">
-        <div class="container">
-            <h2 class="text-center fade-in">Реальні результати</h2>
-            <p class="section-subtitle text-center fade-in">Перетягніть повзунок, щоб побачити різницю</p>
-
-            <div class="ba-container fade-in">
-                <div class="ba-slider" id="baSlider">
-                    <div class="ba-before"></div>
-                    <div class="ba-after" id="baAfter"></div>
-                    <div class="ba-handle" id="baHandle"></div>
-                </div>
-                <div class="ba-labels">
-                    <span>До процедури</span>
-                    <span>Після 2 сеансів</span>
-                </div>
-                <p class="ba-note">Почервоніння сходить на 1–2 день після процедури</p>
-
-                <div style="text-align:center; margin-top: 32px;">
-                    <a href="https://ig.me/m/k.beauty.cosm" target="_blank" class="btn btn-primary">📩 Хочу такий самий результат</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    
     <!-- ============================================
          WHO IT'S FOR
          ============================================ -->
