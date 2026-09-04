@@ -3186,10 +3186,16 @@
         }, 180000);
 
         // 3) ScrollDeep — доскроллил до 75% страницы
-        var scrollFired = { s50: false, s75: false, s90: false };
+        var scrollFired = { s25: false, s50: false, s75: false, s90: false };
         window.addEventListener('scroll', function() {
             var docHeight = document.documentElement.scrollHeight - window.innerHeight;
             var scrolled = window.scrollY / docHeight;
+            // 25% — тільки в таблицю, без події пікселя: дрібні скроли
+            // аудиторіям Meta не потрібні, а глибину читання показують
+            if (!scrollFired.s25 && scrolled >= 0.25) {
+                scrollFired.s25 = true;
+                TRACK.push('scroll', '25%');
+            }
             if (!scrollFired.s50 && scrolled >= 0.5) {
                 scrollFired.s50 = true;
                 TRACK.push('scroll', '50%');
