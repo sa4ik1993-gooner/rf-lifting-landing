@@ -3137,7 +3137,7 @@
                     if (!r.ok) throw new Error('fail');
                     form.style.display = 'none';
                     okEl.style.display = 'block';
-                    TRACK.push('lead_submit', 'ok');
+                    TRACK.push('lead_submit', 'форма');
                     if (typeof fbq === 'function' && !leadAlreadySent()) {
                         markLeadSent();
                         fbq('track', 'Purchase', { value: 4200, currency: 'UAH' });
