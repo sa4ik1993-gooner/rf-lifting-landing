@@ -79,14 +79,15 @@ module.exports = async function handler(req, res) {
     const row = [[
       `${kyiv.year}-${kyiv.month}-${kyiv.day} ${kyiv.hour}:${kyiv.minute}:${kyiv.second}`,
       name, "'" + phoneRaw,     // апостроф: щоб Sheets не з'їв «+» і провідні нулі
-      clean(u.source, 60), clean(u.medium, 60), clean(u.campaign, 80), clean(u.content, 80),
+      clean(u.source, 60), clean(u.medium, 60), clean(u.campaign, 80),
+      clean(u.term, 60), clean(u.content, 80),
       clean(req.headers['x-vercel-ip-country'], 8), cleanCity(req.headers['x-vercel-ip-city']),
       browserOf(ua), clean(body.sid, 40),
     ]];
 
     const id = process.env.ANALYTICS_SHEET_ID;
     const token = await accessToken();
-    const range = encodeURIComponent(`${SHEET_TAB}!A:K`);
+    const range = encodeURIComponent(`${SHEET_TAB}!A:L`);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${id}/values/${range}` +
       `:append?valueInputOption=USER_ENTERED&insertDataOption=OVERWRITE`;
     const r = await fetch(url, {
