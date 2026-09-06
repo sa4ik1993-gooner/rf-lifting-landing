@@ -3045,7 +3045,7 @@
             });
 
             push('open', location.pathname);
-            return { push: push, sid: sid, setBlock: function(b) { if (b) lastBlock = b; } };
+            return { push: push, sid: sid, utm: utm, setBlock: function(b) { if (b) lastBlock = b; } };
         })();
 
         // Блоки нумеруємо в порядку сторінки: у таблиці «08_pricing» більше за
@@ -3127,8 +3127,13 @@
                 var btn = form.querySelector('button[type="submit"]');
                 btn.disabled = true;
                 btn.textContent = 'Надсилаємо…';
-                var utm = {};
-                try { utm = JSON.parse(sessionStorage.getItem('kb_utm') || '{}'); } catch (err) {}
+                // utm беремо з пам'яті TRACK, а НЕ з sessionStorage: вбудований
+                // браузер Instagram нестабільно зберігає sessionStorage, і заявка
+                // губила мітки, хоча в подіях сеансу вони були (кейс Ірини 06.09)
+                var utm = (typeof TRACK !== 'undefined' && TRACK.utm) ? TRACK.utm : {};
+                if (!utm.source && !utm.campaign) {
+                    try { utm = JSON.parse(sessionStorage.getItem('kb_utm') || '{}'); } catch (err) {}
+                }
                 fetch('/api/lead', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

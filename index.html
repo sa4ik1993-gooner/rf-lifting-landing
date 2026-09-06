@@ -3004,7 +3004,7 @@
             });
 
             push('open', location.pathname);
-            return { push: push, sid: sid, setBlock: function(b) { if (b) lastBlock = b; } };
+            return { push: push, sid: sid, utm: utm, setBlock: function(b) { if (b) lastBlock = b; } };
         })();
 
         // Блоки нумеруємо в порядку сторінки: у таблиці «08_pricing» більше за
