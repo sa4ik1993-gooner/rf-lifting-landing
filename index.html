@@ -2871,9 +2871,18 @@
             if (!el) return;
             el.classList.add('visible');
             el.querySelectorAll('.fade-in').forEach(function(x) { x.classList.add('visible'); });
-            el.scrollIntoView({ behavior: 'auto', block: 'start' });
+            // scroll-behavior:smooth зриває стрибок до якоря, поки довантажуються
+            // картинки вище (ціль рухається) — тимчасово вимикаємо, скролимо миттєво
+            var root = document.documentElement, prev = root.style.scrollBehavior;
+            root.style.scrollBehavior = 'auto';
+            var y = el.getBoundingClientRect().top + window.pageYOffset - 16;
+            window.scrollTo(0, y);
+            root.style.scrollBehavior = prev;
         }
-        window.addEventListener('load', function() { setTimeout(scrollToHash, 200); });
+        // Кілька спроб: висота сторінки стабілізується не одразу після load
+        window.addEventListener('load', function() {
+            [100, 400, 900].forEach(function(t) { setTimeout(scrollToHash, t); });
+        });
 
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
