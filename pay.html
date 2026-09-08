@@ -1990,7 +1990,9 @@
                 bottom: 90px;
             }
         }
-    </style>
+    
+        section[id] { scroll-margin-top: 16px; }
+</style>
 </head>
 <body>
 
@@ -2883,6 +2885,21 @@
         // ============================================
         // SMOOTH SCROLL FOR ANCHOR LINKS
         // ============================================
+
+        // Вхідний якір (напр. /pay#compare): довга сторінка з картинками
+        // з'їжджає, якщо браузер стрибає до якоря завчасно. Докручуємо після
+        // повного завантаження і знімаємо fade-in із цільового блока.
+        function scrollToHash() {
+            if (!location.hash) return;
+            var el;
+            try { el = document.querySelector(location.hash); } catch (e) { return; }
+            if (!el) return;
+            el.classList.add('visible');
+            el.querySelectorAll('.fade-in').forEach(function(x) { x.classList.add('visible'); });
+            el.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+        window.addEventListener('load', function() { setTimeout(scrollToHash, 200); });
+
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
